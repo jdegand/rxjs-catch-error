@@ -1,22 +1,24 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, concatMap, fromEvent, map } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   selector: 'app-root',
   template: `
     <div class="form-container">
       <span>Possible values: posts, comments, albums, photos, todos, users</span>
     </div>
     <div class="form-container">
-      <input #inputRef type="text" placeholder="Enter text" />
-      <button #buttonRef>Fetch</button>
-    </div>
-    <div class="form-container">
-      {{ response | json }}
+      <form (ngSubmit)="onSubmit()">
+        <input type="text" placeholder="Enter text" [formControl]="search" />
+        <button type="submit">Fetch</button>
+      </form>
+      <div class="response">
+        {{ response | json }}
+      </div>
     </div>
   `,
   styles: [
@@ -31,6 +33,13 @@ import { CommonModule } from '@angular/common';
       }
       .form-container {
         text-align: center;
+      }
+      .response {
+        margin-left: 25%;
+        margin-top: 2%;
+        width: 50%;
+        text-align: center;
+        border: 1px solid #ccc;
       }
       input {
         padding: 8px;
@@ -50,31 +59,15 @@ import { CommonModule } from '@angular/common';
   ],
 })
 export class AppComponent {
-  @ViewChild('buttonRef', { static: true }) buttonRef!: ElementRef;
-  @ViewChild('inputRef', { static: true }) inputRef!: ElementRef;
-  response: unknown;
-  constructor(private http: HttpClient) {}
 
-  ngOnInit() {
-    const buttonClick$ = fromEvent(this.buttonRef.nativeElement, 'click');
-    buttonClick$
-      .pipe(
-        map(() => this.inputRef.nativeElement.value),
-        concatMap((value) =>
-          this.http.get(`https://jsonplaceholder.typicode.com/${value}/1`)
-        ),
-        catchError((err, caught) => caught), // all you have to add
-      )
-      .subscribe({
-        next: (value) => {
-          console.log(value);
-          this.response = value;
-        },
-        error: (error) => {
-          console.log(error);
-          this.response = error;
-        },
-        complete: () => console.log('done'),
-      });
+  search = new FormControl('');
+
+  response: unknown;
+  constructor(private http: HttpClient) { }
+
+  onSubmit() {
+    return this.http.get(`https://jsonplaceholder.typicode.com/${this.search.value}/1`).subscribe((data) => {
+      this.response = data;
+    })
   }
 }
